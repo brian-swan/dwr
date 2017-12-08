@@ -17,3 +17,22 @@ c:\users\bswan\documents\visual studio 2017\Projects\dwr\dwr\obj\Debug\dwr.cspro
 c:\users\bswan\documents\visual studio 2017\Projects\dwr\dwr\obj\Debug\dwr.csproj.CoreCompileInputs.cache
 c:\users\bswan\documents\visual studio 2017\Projects\dwr\dwr\obj\Debug\dwr.exe
 c:\users\bswan\documents\visual studio 2017\Projects\dwr\dwr\obj\Debug\dwr.pdb
+c:\Repos\dwr\dwr\obj\Debug\dwr.csprojResolveAssemblyReference.cache
+c:\Repos\dwr\dwr\obj\Debug\dwr.csproj.CoreCompileInputs.cache
+c:\Repos\dwr\dwr\bin\Debug\dwr.exe.config
+c:\Repos\dwr\dwr\bin\Debug\dwr.exe
+c:\Repos\dwr\dwr\bin\Debug\dwr.pdb
+c:\Repos\dwr\dwr\bin\Debug\Kusto.Cloud.Platform.dll
+c:\Repos\dwr\dwr\bin\Debug\Kusto.Data.dll
+c:\Repos\dwr\dwr\bin\Debug\Microsoft.IdentityModel.Clients.ActiveDirectory.dll
+c:\Repos\dwr\dwr\bin\Debug\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll
+c:\Repos\dwr\dwr\bin\Debug\Microsoft.IO.RecyclableMemoryStream.dll
+c:\Repos\dwr\dwr\bin\Debug\Newtonsoft.Json.dll
+c:\Repos\dwr\dwr\bin\Debug\System.Collections.Immutable.dll
+c:\Repos\dwr\dwr\bin\Debug\Kusto.Data.xml
+c:\Repos\dwr\dwr\bin\Debug\Microsoft.IdentityModel.Clients.ActiveDirectory.xml
+c:\Repos\dwr\dwr\bin\Debug\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.xml
+c:\Repos\dwr\dwr\bin\Debug\Newtonsoft.Json.xml
+c:\Repos\dwr\dwr\bin\Debug\System.Collections.Immutable.xml
+c:\Repos\dwr\dwr\obj\Debug\dwr.exe
+c:\Repos\dwr\dwr\obj\Debug\dwr.pdb
