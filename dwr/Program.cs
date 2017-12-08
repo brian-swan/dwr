@@ -14,8 +14,8 @@ namespace dwr
 	{
 		static void Main(string[] args)
 		{
-			var report = new DorothyReport("2017-12-06T00:00:00Z", 3, 1);
-			report.Generate();
+			var report = new DorothyReport("2017-12-06T00:00:00Z", 6, 1);
+			report.Generate().Wait();
 			
 			Console.ReadLine();
 		}

@@ -2,6 +2,7 @@
 using Kusto.Data.Exceptions;
 using Kusto.Data.Net.Client;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -17,8 +18,7 @@ namespace dwr
 		private int _reportPeriodInHours;
 		private DateTimeOffset _startTime;
 		private int _queryIntervalInHours;
-		private List<EnvironmentStats> _statsList;
-		private List<string> _uniqueEnvironments;
+		private ConcurrentBag<EnvironmentStats> _statsList;
 		private const string E2elogsConnString = "https://cate2e.kusto.windows.net/e2elogs;Fed=true";
 		private ICslQueryProvider _client; 
 		private const string QueryTemplate =
@@ -52,81 +52,49 @@ namespace dwr
 			_reportPeriodInHours = reportPeriodInHours;
 			_startTime = _endTime.AddHours(-_reportPeriodInHours);
 			_queryIntervalInHours = queryIntervalInHours;
-			_statsList = new List<EnvironmentStats>();
-			_uniqueEnvironments = new List<string>();
+			_statsList = new ConcurrentBag<EnvironmentStats>();//new List<EnvironmentStats>();
 			_client = KustoClientFactory.CreateCslQueryProvider(E2elogsConnString);
 		}
 
-		public void Generate()
+		public async Task Generate()
 		{
 			Console.WriteLine("Generating report...");
 			Console.WriteLine(string.Format("Report dates: {0} to {1}", _startTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), _endTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")));
 			Console.WriteLine(string.Format("Query interval: {0} hours\n", _queryIntervalInHours));
 			var sw = Stopwatch.StartNew();
 			var allQueriesSucceeded = true;
-			for (int i = 0; i < _reportPeriodInHours; i += _queryIntervalInHours)
+			//for (int i = 0; i < _reportPeriodInHours; i += _queryIntervalInHours)
+			//{
+			//	var queryStartTime = _startTime.AddHours(i);
+			//	var queryEndTime = queryStartTime.AddHours(_queryIntervalInHours);
+			//	Console.ForegroundColor = ConsoleColor.White;
+			//	Console.WriteLine(string.Format("Querying interval {0} to {1}...", queryStartTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), queryEndTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")));
+			//	var query = String.Format(QueryTemplate, queryStartTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), queryEndTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), "1h");
+			//	if(!GetResult(query))
+			//	{
+			//		allQueriesSucceeded = false;
+			//	}
+			//}
+			var parallelTaskCount = _reportPeriodInHours/_queryIntervalInHours;
+			var tasks = new List<Task>(parallelTaskCount);
+			var querySuccess = new ConcurrentBag<bool>();
+			for (var t = 0; t < parallelTaskCount; t++)
 			{
-				var queryStartTime = _startTime.AddHours(i);
-				var queryEndTime = queryStartTime.AddHours(_queryIntervalInHours);
-				Console.ForegroundColor = ConsoleColor.White;
-				Console.WriteLine(string.Format("Querying interval {0} to {1}...", queryStartTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), queryEndTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")));
-				var query = String.Format(QueryTemplate, queryStartTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), queryEndTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), "1h");
-				var maxRetries = 3;
-				var retries = 0;
-				var querySuccess = false;
-				IDataReader reader;
-				while (retries < maxRetries && !querySuccess)
-				{
-					try
-					{
-						reader = _client.ExecuteQuery(query);
-						while (reader.Read())
-						{
-							var stats = new EnvironmentStats();
-							var values = new object[7];
-							reader.GetValues(values);
-							stats.EnvironmentName = values[0].ToString();
-							stats.Timestamp = Convert.ToDateTime(values[1]);
-							stats.FastRequests = Convert.ToInt32(values[2]);
-							stats.SlowRequests = Convert.ToInt32(values[3]);
-							stats.FailedRequests = Convert.ToInt32(values[4]);
-							stats.TimedoutRequests = Convert.ToInt32(values[5]);
-							stats.UnknownRequests = Convert.ToInt32(values[6]);
-							if (!_uniqueEnvironments.Contains(stats.EnvironmentName))
-							{
-								_uniqueEnvironments.Add(stats.EnvironmentName);
-							}
-							_statsList.Add(stats);
-						}
-						reader.Dispose();
-						querySuccess = true;
-					}
-					catch (KustoServiceTimeoutException)
-					{
-						retries++;
-						Console.ForegroundColor = ConsoleColor.White;
-						Console.WriteLine("Request timed out. Retrying...");
-					}
-					catch (Exception e)
-					{
-						Console.ForegroundColor = ConsoleColor.Red;
-						Console.WriteLine(string.Format("Query failed with exception {0}", e.Message));
-					}
-				}
-				if (querySuccess)
-				{
-					Console.ForegroundColor = ConsoleColor.Green;
-					Console.WriteLine(string.Format("Finished query in {0}", sw.Elapsed.ToString()));
-				}
-				else
-				{
-					allQueriesSucceeded = false;
-					Console.ForegroundColor = ConsoleColor.Red;
-					Console.WriteLine(string.Format("Query failed after {0}. Report results will be incomplete.", sw.Elapsed));
-				}
+				var env = "a";
+				if(t%3 == 1)
+						env = "b";
+				if (t % 3 == 2)
+					env = "c";
+				var task = t; // preventing access to modified closure
+				tasks.Add(Task.Run(async () => querySuccess.Add(await GetResult(env))));
 			}
+			await Task.WhenAll(tasks);
+			if(querySuccess.Contains(false))
+			{
+				allQueriesSucceeded = false;
+			}
+			Console.WriteLine(allQueriesSucceeded);
 			sw.Stop();
-
 			if (allQueriesSucceeded)
 			{
 				Console.ForegroundColor = ConsoleColor.Green;
@@ -140,18 +108,113 @@ namespace dwr
 
 			Console.ForegroundColor = ConsoleColor.White;
 			Console.WriteLine("Report results...\n");
-			foreach (var environment in _uniqueEnvironments)
+
+			var results = (from stats in _statsList
+										 group stats by stats.EnvironmentName into groupedStats
+										 select new
+										 {
+											 Env = groupedStats.Select(e => e.EnvironmentName).First(),
+											 FastRequests = groupedStats.Sum(e => e.FastRequests),
+											 Slowequests = groupedStats.Sum(e => e.SlowRequests),
+											 FailedRequests = groupedStats.Sum(e => e.FailedRequests),
+											 TimedoutRequests = groupedStats.Sum(e => e.TimedoutRequests),
+											 UnknownRequests = groupedStats.Sum(e => e.UnknownRequests),
+											 Apdex = (double)(groupedStats.Sum(e => e.FastRequests) + groupedStats.Sum(e => e.SlowRequests))/(double)(groupedStats.Sum(e => e.FastRequests) + groupedStats.Sum(e => e.SlowRequests) + groupedStats.Sum(e=>e.TimedoutRequests) + groupedStats.Sum(e=>e.FailedRequests)),
+										 });
+
+
+			foreach(var result in results)
 			{
-				var fastRequests = _statsList.Where(item => item.EnvironmentName == environment).Sum(item => item.FastRequests);
-				var slowRequests = _statsList.Where(item => item.EnvironmentName == environment).Sum(item => item.SlowRequests);
-				var failedRequests = _statsList.Where(item => item.EnvironmentName == environment).Sum(item => item.FailedRequests);
-				var timedoutRequests = _statsList.Where(item => item.EnvironmentName == environment).Sum(item => item.TimedoutRequests);
-				var unknownRequests = _statsList.Where(item => item.EnvironmentName == environment).Sum(item => item.UnknownRequests);
-				var apdex = ((double)fastRequests + .5 * (double)slowRequests) / ((double)(fastRequests + slowRequests + fastRequests + timedoutRequests));
-				Console.Write(string.Format("{0}, Fast: {1}, Slow: {2}, Failed: {3}, Timeout: {4}, Unknown: {5}, Apdex: {6}",
-					environment, fastRequests, slowRequests, failedRequests, timedoutRequests, unknownRequests, apdex));
+				Console.Write(result.Env + ": ") ;
+				Console.Write(" Fast: " + result.FastRequests);
+				Console.Write(" Slow: " + result.Slowequests);
+				Console.Write(" Failed: " + result.FailedRequests);
+				Console.Write(" Timedout: " + result.TimedoutRequests);
+				Console.Write(" Unknown: " + result.UnknownRequests);
+				Console.Write(" Apdex: " + result.Apdex);
 				Console.WriteLine();
 			}
+		}
+
+		private async Task<bool> GetResult(string query)
+		{
+			//****************for testing*****************
+			var stats = new EnvironmentStats();
+			var value = 1;
+			if (query == "b")
+				value = 2;
+			if (query == "c")
+				value = 3;
+			stats.EnvironmentName = "Env_" + query;
+			Console.WriteLine(stats.EnvironmentName);
+			stats.Timestamp = Convert.ToDateTime("2017-12-01T0" + value + ":00:00.000Z");
+			stats.FastRequests = value;
+			stats.SlowRequests = value;
+			stats.FailedRequests = value;
+			stats.TimedoutRequests = value;
+			stats.UnknownRequests = value;
+			_statsList.Add(stats);
+			if (query == "c")
+				return false;
+			return true;
+			//********************************************
+			//var maxRetries = 3;
+			//var retries = 0;
+			//var querySuccess = false;
+			//IDataReader reader;
+			//var sw = Stopwatch.StartNew();
+			//while (retries < maxRetries && !querySuccess)
+			//{
+			//	try
+			//	{
+			//		using (reader = _client.ExecuteQuery(query))
+			//		{
+			//			while (reader.Read())
+			//			{
+			//				var stats = new EnvironmentStats();
+			//				var values = new object[7];
+			//				reader.GetValues(values);
+			//				stats.EnvironmentName = values[0].ToString();
+			//				stats.Timestamp = Convert.ToDateTime(values[1]);
+			//				stats.FastRequests = Convert.ToInt32(values[2]);
+			//				stats.SlowRequests = Convert.ToInt32(values[3]);
+			//				stats.FailedRequests = Convert.ToInt32(values[4]);
+			//				stats.TimedoutRequests = Convert.ToInt32(values[5]);
+			//				stats.UnknownRequests = Convert.ToInt32(values[6]);
+			//				if (!_uniqueEnvironments.Contains(stats.EnvironmentName))
+			//				{
+			//					_uniqueEnvironments.Add(stats.EnvironmentName);
+			//				}
+			//				_statsList.Add(stats);
+			//			}
+			//		}
+			//		querySuccess = true;
+			//	}
+			//	catch (KustoServiceTimeoutException)
+			//	{
+			//		retries++;
+			//		Console.ForegroundColor = ConsoleColor.White;
+			//		Console.WriteLine("Request timed out. Retrying...");
+			//	}
+			//	catch (Exception e)
+			//	{
+			//		Console.ForegroundColor = ConsoleColor.Red;
+			//		Console.WriteLine(string.Format("Query failed with exception {0}", e.Message));
+			//	}
+			//}
+			//sw.Stop();
+			//if (querySuccess)
+			//{
+			//	Console.ForegroundColor = ConsoleColor.Green;
+			//	Console.WriteLine(string.Format("Finished query in {0}", sw.Elapsed.ToString()));
+			//	return true;
+			//}
+			//else
+			//{
+			//	Console.ForegroundColor = ConsoleColor.Red;
+			//	Console.WriteLine(string.Format("Query failed after {0}. Report results will be incomplete.", sw.Elapsed));
+			//	return false;
+			//}
 		}
 	}
 }
