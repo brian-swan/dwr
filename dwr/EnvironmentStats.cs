@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace dwr
 {
-	class EnvironmentStats
+	public class EnvironmentStats
 	{
 		public EnvironmentStats()
 		{ }

@@ -65,6 +65,9 @@
   <ItemGroup>
     <Compile Include="DorothyReport.cs" />
     <Compile Include="EnvironmentStats.cs" />
+    <Compile Include="IQuery.cs" />
+    <Compile Include="DorothyReportQuery.cs" />
+    <Compile Include="MockDorothyReportQueryTemp.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -1,39 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using dwr;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Kusto.Data;
-using System.Diagnostics;
-using System.Data;
-using Kusto.Data.Exceptions;
 
-namespace dwr
+namespace dwr_tests
 {
-	class Program
+	[TestClass]
+	public class UnitTest1
 	{
-		static void Main(string[] args)
+		[TestMethod]
+		public async void TestMethod1()
 		{
-			// Get rid of these test cases when I can get VS to discover my test
-			//var query = new MockDorothyReportQueryTemp();
-			////var report = new DorothyReport(query, "2017-12-06T06:00:00Z", 6, 2); // Test case: all should succeed
-			//var report = new DorothyReport(query, "2017-12-06T06:00:00Z", 6, 1); // Test case: some failed queries
-
-			var query = new DorothyReportQuery();
-			var report = new DorothyReport(query, "2017-12-06T06:00:00Z", 1, 1);
-
+			var query = new MockDorothyReportQuery();
+			var report = new DorothyReport(query, "2017-12-06T06:00:00Z", 6, 2);
 			var statsList = report.Generate();
-			PrintReportToConsole(statsList.Result);
 
-			Console.ReadLine();
-		}
-
-		public static void PrintReportToConsole(List<EnvironmentStats> statsList)
-		{
 			Console.ForegroundColor = ConsoleColor.White;
 			Console.WriteLine("Report results...\n");
 
-			var results = (from stats in statsList
+			var results = (from stats in statsList.Result
 						   group stats by stats.EnvironmentName into groupedStats
 						   select new
 						   {
@@ -58,6 +43,8 @@ namespace dwr
 				Console.Write(" Apdex: " + result.Apdex);
 				Console.WriteLine();
 			}
+			Console.ReadLine();
+			Assert.AreEqual(1, 1);
 		}
 	}
 }
