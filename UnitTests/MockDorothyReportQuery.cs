@@ -1,15 +1,12 @@
-﻿using dwr;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using dwr;
 
-namespace dwr_tests
+namespace UnitTests
 {
-	public class MockDorothyReportQuery: IQuery
+	class MockDorothyReportQuery : IQuery
 	{
-
 		public MockDorothyReportQuery()
 		{
 

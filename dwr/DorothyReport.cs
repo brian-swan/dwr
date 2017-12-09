@@ -1,13 +1,8 @@
-﻿using Kusto.Data.Common;
-using Kusto.Data.Exceptions;
-using Kusto.Data.Net.Client;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace dwr
@@ -39,14 +34,12 @@ namespace dwr
 			var sw = Stopwatch.StartNew();
 			var parallelTaskCount = _reportPeriodInHours/_queryIntervalInHours;
 			var tasks = new List<Task>(parallelTaskCount);
-			var i = 0;
 			for (var t = 0; t < parallelTaskCount; t++)
 			{
-				var queryStartTime = _startTime.AddHours(i * _queryIntervalInHours); // strange things happen when I use t here?
+				var queryStartTime = _startTime.AddHours(t * _queryIntervalInHours); 
 				var queryEndTime = queryStartTime.AddHours(_queryIntervalInHours);
 				var task = t; // preventing access to modified closure
 				tasks.Add(Task.Run(async () => _statsList.Add(await _query.GetResult(queryStartTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), queryEndTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), _queryIntervalInHours))));
-				i++;
 			}
 			await Task.WhenAll(tasks);
 			sw.Stop();

@@ -36,3 +36,11 @@ c:\Repos\dwr\dwr\bin\Debug\Newtonsoft.Json.xml
 c:\Repos\dwr\dwr\bin\Debug\System.Collections.Immutable.xml
 c:\Repos\dwr\dwr\obj\Debug\dwr.exe
 c:\Repos\dwr\dwr\obj\Debug\dwr.pdb
+c:\Users\bswan\documents\visual studio 2017\Projects\dwr\dwr\bin\Debug\ClosedXML.dll
+c:\Users\bswan\documents\visual studio 2017\Projects\dwr\dwr\bin\Debug\DocumentFormat.OpenXml.dll
+c:\Users\bswan\documents\visual studio 2017\Projects\dwr\dwr\bin\Debug\FastMember.Signed.dll
+c:\Users\bswan\documents\visual studio 2017\Projects\dwr\dwr\bin\Debug\System.IO.FileSystem.Primitives.dll
+c:\Users\bswan\documents\visual studio 2017\Projects\dwr\dwr\bin\Debug\System.IO.Packaging.dll
+c:\Users\bswan\documents\visual studio 2017\Projects\dwr\dwr\bin\Debug\ClosedXML.pdb
+c:\Users\bswan\documents\visual studio 2017\Projects\dwr\dwr\bin\Debug\ClosedXML.xml
+c:\Users\bswan\documents\visual studio 2017\Projects\dwr\dwr\bin\Debug\DocumentFormat.OpenXml.xml

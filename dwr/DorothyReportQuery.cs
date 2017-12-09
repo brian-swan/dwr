@@ -4,8 +4,6 @@ using Kusto.Data.Net.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace dwr
@@ -14,7 +12,6 @@ namespace dwr
 	{
 		private const string E2elogsConnString = "https://cate2e.kusto.windows.net/e2elogs;Fed=true";
 		private ICslQueryProvider _client;
-		private string _query;
 		private const string QueryTemplate =
 			@"set query_datascope='hotcache';
 					let startTime = datetime('{0}');
@@ -85,24 +82,24 @@ namespace dwr
 				{
 					retries++;
 					Console.ForegroundColor = ConsoleColor.White;
-					Console.WriteLine("Request timed out. Retrying...");
+					Console.WriteLine(string.Format("Query for interval starting at {0} timed out. Retrying...", startTime));
 				}
 				catch (Exception e)
 				{
 					Console.ForegroundColor = ConsoleColor.Red;
-					Console.WriteLine(string.Format("Query failed with exception {0}", e.Message));
+					Console.WriteLine(string.Format("Query for interval starting at {0} failed with exception {1}", startTime, e.Message));
 				}
 			}
 			sw.Stop();
 			if (querySuccess)
 			{
 				Console.ForegroundColor = ConsoleColor.Green;
-				Console.WriteLine(string.Format("Finished query in {0}", sw.Elapsed.ToString()));
+				Console.WriteLine(string.Format("Finished query for interval starting at {0} in {1}", startTime,sw.Elapsed.ToString()));
 			}
 			else
 			{
 				Console.ForegroundColor = ConsoleColor.Red;
-				Console.WriteLine(string.Format("Query failed after {0}. Report results will be incomplete.", sw.Elapsed));
+				Console.WriteLine(string.Format("Query for interval starting at {0} failed after {1}. Report results will be incomplete.", startTime, sw.Elapsed));
 				statsList.Add(new EnvironmentStats() { EnvironmentName = "FailedQuery" });
 			}
 			return statsList;
